@@ -95,7 +95,8 @@ function escapeHtml(str) {
 function renderStars(rating) {
   const r = Number(rating) || 0;
   let out = "";
-  for (let i = 1; i <= 5; i++) out += `<span class="${i <= r ? "text-yellow-400" : "text-gray-300"}">★</span>`;
+  for (let i = 1; i <= 5; i++)
+    out += `<span class="${i <= r ? "text-yellow-400" : "text-gray-300"}">★</span>`;
   return `<div class="text-lg leading-none" aria-label="${r} من 5">${out}</div>`;
 }
 
@@ -136,7 +137,16 @@ async function fetchReviews({ reset = false } = {}) {
 
   try {
     loadMoreBtn.textContent = "جاري التحميل...";
+
     const res = await fetch(`${API_BASE}/reviews?${params.toString()}`, { method: "GET" });
+
+    // ✅ فحص نوع الاستجابة قبل محاولة parse JSON
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      const t = await res.text();
+      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
+    }
+
     const data = await res.json();
 
     if (!res.ok) throw new Error(data?.detail || data?.error || "خطأ في التحميل");
@@ -242,12 +252,15 @@ form.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, job, rating, review, tsToken }),
     });
-const ct = res.headers.get("content-type") || "";
-if (!ct.includes("application/json")) {
-  const t = await res.text();
-  throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
-}
-const data = await res.json();
+
+    // ✅ فحص نوع الاستجابة قبل محاولة parse JSON
+    const ct = res.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      const t = await res.text();
+      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
+    }
+
+    const data = await res.json();
 
     if (!res.ok) throw new Error(data?.detail || data?.error || "تعذر إرسال الرأي");
 
