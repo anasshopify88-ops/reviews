@@ -242,7 +242,12 @@ form.addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, job, rating, review, tsToken }),
     });
-    const data = await res.json();
+const ct = res.headers.get("content-type") || "";
+if (!ct.includes("application/json")) {
+  const t = await res.text();
+  throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
+}
+const data = await res.json();
 
     if (!res.ok) throw new Error(data?.detail || data?.error || "تعذر إرسال الرأي");
 
