@@ -1,5 +1,5 @@
 // ====== عدّل هذا للرابط حق الـ Worker ======
-const API_BASE = "YOUR_WORKER_BASE"; // مثال: https://reviews-api.yourname.workers.dev
+const API_BASE = "https://reviews-api.anasshopify88.workers.dev"; // مثال: https://reviews-api.yourname.workers.dev
 
 // Anti-spam timing guard
 const MIN_SECONDS_BEFORE_SUBMIT = 3;
