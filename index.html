@@ -56,10 +56,7 @@
     }
     .anas-blog-btn:hover{ filter: brightness(.95); }
 
-    /* نخفي زر "كل الآراء" لو موجود بالهيدر */
-    .hide-all-reviews-btn{ display: none !important; }
-
-    /* الفوتر: لو فيه نص anasrashed.com نخفيه ونحط شعار */
+    /* الفوتر */
     .anas-footer-logo{
       height: 44px;
       width: auto;
@@ -207,139 +204,162 @@
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
 
-  <!-- ✅ Patch header/footer after components render -->
+  <!-- ✅ Patch header/footer (منع تكرار الشعار + زر المدونة + حذف كل الآراء + شعار الفوتر) -->
   <script>
-    (function () {
-      var LOGO = "https://imgur.com/meUEoP7.png";
-      var BLOG_URL = "https://blog.anasrashed.com";
+  (function () {
+    var LOGO = "https://imgur.com/meUEoP7.png";
+    var BLOG_URL = "https://blog.anasrashed.com";
 
-      function makeLogo() {
-        var img = document.createElement("img");
-        img.src = LOGO;
-        img.alt = "شعار أنس راشد";
-        img.className = "anas-brand-logo";
-        img.loading = "lazy";
-        return img;
+    function makeLogo(className) {
+      var img = document.createElement("img");
+      img.src = LOGO;
+      img.alt = "شعار أنس راشد";
+      img.loading = "lazy";
+      img.className = className;
+      return img;
+    }
+
+    function makeBlogBtn() {
+      var a = document.createElement("a");
+      a.href = BLOG_URL;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.className = "anas-blog-btn";
+      a.innerHTML = "<i data-feather='book-open' class='w-4 h-4'></i><span>المدونة</span>";
+      return a;
+    }
+
+    function removeExtra(root, selector) {
+      var els = root.querySelectorAll(selector);
+      for (var i = 1; i < els.length; i++) els[i].remove();
+    }
+
+    function findBrandContainer(root) {
+      // أفضل اختيار: رابط الرئيسية
+      var preferred =
+        root.querySelector("a[href='/']") ||
+        root.querySelector("a[href='./']") ||
+        root.querySelector("a[href='index.html']");
+
+      if (preferred) return preferred;
+
+      // fallback: أقرب عنصر للنصوص القديمة
+      var nodes = root.querySelectorAll("a, div, span, h1, h2, h3, p");
+      for (var i = 0; i < nodes.length; i++) {
+        var t = (nodes[i].textContent || "").trim();
+        if (t === "Anas Rashed" || t === "AR" || t === "آراء العملاء") {
+          return nodes[i].closest("a,div,span") || nodes[i];
+        }
       }
 
-      function makeBlogBtn() {
-        var a = document.createElement("a");
-        a.href = BLOG_URL;
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.className = "anas-blog-btn";
-        a.innerHTML = "<i data-feather='book-open' class='w-4 h-4'></i><span>المدونة</span>";
-        return a;
+      return root.querySelector("header") || root.querySelector("div") || null;
+    }
+
+    function patchHeader() {
+      var host = document.querySelector("custom-header");
+      if (!host) return;
+
+      var root = host.shadowRoot || host;
+
+      // لو انعمل باتش قبل: فقط نظف التكرار
+      if (host.dataset && host.dataset.patched === "1") {
+        removeExtra(root, "img.anas-brand-logo");
+        return;
       }
 
-      function patchHeader() {
-        var host = document.querySelector("custom-header");
-        if (!host) return;
+      // نظّف أي شعارات قديمة (لو كانت موجودة)
+      removeExtra(root, "img.anas-brand-logo");
 
-        // جرّب shadowRoot أولاً، ثم fallback للـ light DOM
-        var root = host.shadowRoot || host;
-
-        // 1) استبدال نصوص الهيدر (Anas Rashed / آراء العملاء / AR) بالشعار:
-        // نحاول نلقط أول "brand" أو "logo" أو عنوان، وإلا نستبدل أول نص بارز
-        var candidates = root.querySelectorAll("a, div, span, h1, h2, h3, p");
-        for (var i = 0; i < candidates.length; i++) {
-          var el = candidates[i];
-          var t = (el.textContent || "").trim();
-          if (t === "Anas Rashed" || t === "آراء العملاء" || t === "AR") {
-            // إذا العنصر فيه فقط النص، استبدله بالشعار
-            el.textContent = "";
-            el.appendChild(makeLogo());
-          }
+      // 1) استبدال منطقة البراند بشعار واحد
+      var brand = findBrandContainer(root);
+      if (brand) {
+        brand.innerHTML = "";
+        brand.appendChild(makeLogo("anas-brand-logo"));
+        if (brand.tagName && brand.tagName.toLowerCase() === "a") {
+          brand.setAttribute("href", "/");
         }
-
-        // كمان: لو فيه عنصر فيه الثلاثة مجتمعين (نادر) نحوله لشعار
-        var textNodes = root.querySelectorAll("*");
-        for (var j = 0; j < textNodes.length; j++) {
-          var node = textNodes[j];
-          var txt = (node.textContent || "").trim();
-          if (txt === "Anas Rashed AR" || txt === "Anas Rashed" || txt === "AR") {
-            // لا نكسر عناصر فيها أزرار/روابط، بس لو عنصر بسيط
-            if (node.children && node.children.length === 0) {
-              node.textContent = "";
-              node.appendChild(makeLogo());
-            }
-          }
-        }
-
-        // 2) استبدال زر "أضف رأيك" بزر المدونة
-        // نبحث عن زر/رابط يحتوي على "أضف رأيك" ونستبدله
-        var btns = root.querySelectorAll("a, button");
-        for (var k = 0; k < btns.length; k++) {
-          var b = btns[k];
-          var bt = (b.textContent || "").trim();
-          if (bt.includes("أضف رأيك") || bt.includes("اضف رأيك") || bt.includes("شارك رأيك")) {
-            var blogBtn = makeBlogBtn();
-            b.replaceWith(blogBtn);
-            break;
-          }
-        }
-
-        // 3) حذف/إخفاء زر "كل الآراء" إن وجد
-        for (var m = 0; m < btns.length; m++) {
-          var x = btns[m];
-          var xt = (x.textContent || "").trim();
-          if (xt.includes("كل الآراء") || xt.includes("كل الاراء") || xt.includes("عرض كل الآراء")) {
-            x.classList.add("hide-all-reviews-btn");
-          }
-        }
-
-        // أيقونات
-        try { if (window.feather) feather.replace(); } catch(e) {}
       }
 
-      function patchFooter() {
-        var host = document.querySelector("custom-footer");
-        if (!host) return;
+      // 2) زر المدونة بدل "أضف رأيك/شارك رأيك"
+      // احذف أي زر مدونة مكرر
+      var oldBlog = root.querySelectorAll("a.anas-blog-btn");
+      for (var ob = 0; ob < oldBlog.length; ob++) oldBlog[ob].remove();
 
-        var root = host.shadowRoot || host;
+      var btns = root.querySelectorAll("a, button");
+      var replaced = false;
 
-        // نبحث عن رابط نصه anasrashed.com ونستبدله بالشعار
-        var links = root.querySelectorAll("a");
-        for (var i = 0; i < links.length; i++) {
-          var a = links[i];
-          var t = (a.textContent || "").trim().toLowerCase();
-          if (t === "anasrashed.com" || t.includes("anasrashed.com")) {
-            a.textContent = "";
-            var img = document.createElement("img");
-            img.src = LOGO;
-            img.alt = "شعار أنس راشد";
-            img.className = "anas-footer-logo";
-            img.loading = "lazy";
-            a.appendChild(img);
-            break;
-          }
+      for (var k = 0; k < btns.length; k++) {
+        var b = btns[k];
+        var bt = (b.textContent || "").trim();
+        if (bt.includes("أضف رأيك") || bt.includes("اضف رأيك") || bt.includes("شارك رأيك")) {
+          b.replaceWith(makeBlogBtn());
+          replaced = true;
+          break;
         }
-
-        // أيقونات
-        try { if (window.feather) feather.replace(); } catch(e) {}
       }
 
-      // ننتظر تحميل components (header.js/footer.js)
-      function run() {
+      // إذا ما لقينا زر الإضافة أصلاً: نحاول نضيف زر المدونة بشكل لطيف
+      if (!replaced) {
+        (root.querySelector("nav") || root).appendChild(makeBlogBtn());
+      }
+
+      // 3) حذف/إخفاء زر "كل الآراء"
+      for (var m = 0; m < btns.length; m++) {
+        var x = btns[m];
+        var xt = (x.textContent || "").trim();
+        if (xt.includes("كل الآراء") || xt.includes("كل الاراء") || xt.includes("عرض كل الآراء")) {
+          x.style.display = "none";
+        }
+      }
+
+      if (host.dataset) host.dataset.patched = "1";
+      try { if (window.feather) feather.replace(); } catch(e) {}
+    }
+
+    function patchFooter() {
+      var host = document.querySelector("custom-footer");
+      if (!host) return;
+
+      var root = host.shadowRoot || host;
+
+      // استبدال رابط anasrashed.com بشعار
+      var links = root.querySelectorAll("a");
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        var t = (a.textContent || "").trim().toLowerCase();
+        if (t === "anasrashed.com" || t.includes("anasrashed.com")) {
+          a.textContent = "";
+          a.appendChild(makeLogo("anas-footer-logo"));
+          break;
+        }
+      }
+
+      // نظّف أي تكرار
+      removeExtra(root, "img.anas-footer-logo");
+
+      try { if (window.feather) feather.replace(); } catch(e) {}
+    }
+
+    function run() {
+      patchHeader();
+      patchFooter();
+
+      // إعادة محاولة لأن الـ components أحيانًا تتأخر/تعيد رندر
+      var tries = 0;
+      var timer = setInterval(function(){
+        tries++;
         patchHeader();
         patchFooter();
+        if (tries >= 12) clearInterval(timer);
+      }, 250);
+    }
 
-        // إعادة المحاولة كم مرة لأن الـ web components أحياناً تتأخر
-        var tries = 0;
-        var timer = setInterval(function(){
-          tries++;
-          patchHeader();
-          patchFooter();
-          if (tries >= 10) clearInterval(timer);
-        }, 250);
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", run);
-      } else {
-        run();
-      }
-    })();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", run);
+    } else {
+      run();
+    }
+  })();
   </script>
 
   <!-- Page logic -->
