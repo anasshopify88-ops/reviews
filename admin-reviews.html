@@ -3,32 +3,78 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>لوحة إدارة الآراء</title>
+  <title>لوحة إدارة الآراء (OTP)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
-  <style> body{font-family:Cairo,system-ui} </style>
+  <style>
+    body{font-family:Cairo,system-ui}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-  <!-- Login -->
-  <div id="login" class="min-h-screen flex items-center justify-center p-6">
+  <!-- AUTH WRAP -->
+  <div id="authWrap" class="min-h-screen flex items-center justify-center p-6">
     <div class="bg-white border rounded-2xl shadow-sm p-6 w-full max-w-md">
-      <h1 class="text-2xl font-extrabold text-blue-700 mb-2">دخول لوحة الإدارة</h1>
-      <p class="text-gray-600 mb-4">محميّة بكلمة مرور فقط (جلسة مؤقتة).</p>
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-700 mb-1">دخول لوحة الإدارة</h1>
+          <p class="text-gray-600 text-sm">كلمة المرور + رمز تحقق على الإيميل.</p>
+        </div>
+        <span class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">OTP</span>
+      </div>
 
-      <label class="text-sm text-gray-700">كلمة المرور</label>
-      <input id="pw" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-3" placeholder="اكتب كلمة المرور" />
+      <!-- STEP 1 -->
+      <div id="step1" class="mt-5">
+        <label class="text-sm text-gray-700">كلمة المرور</label>
+        <input id="pw" type="password"
+               class="w-full border rounded-lg px-3 py-2 mt-1"
+               placeholder="اكتب كلمة المرور" autocomplete="current-password" />
+        <button id="sendOtpBtn"
+                class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2.5 rounded-lg mt-3">
+          إرسال رمز التحقق
+        </button>
+        <p id="step1Err" class="text-sm text-red-600 mt-3"></p>
+        <p class="text-xs text-gray-500 mt-3">
+          تنبيه: لا تشارك رابط هذه الصفحة أو الرمز مع أي شخص.
+        </p>
+      </div>
 
-      <button id="enter" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2.5 rounded-lg">دخول</button>
+      <!-- STEP 2 -->
+      <div id="step2" class="mt-5 hidden">
+        <div class="bg-green-50 border border-green-100 rounded-xl p-3 text-green-800 text-sm">
+          تم إرسال رمز التحقق إلى بريدك. أدخله خلال <span id="ttlMin">10</span> دقائق.
+        </div>
 
-      <p id="err" class="text-sm text-red-600 mt-3"></p>
-      <p class="text-xs text-gray-500 mt-4">تنبيه: لا تشارك رابط هذه الصفحة.</p>
+        <label class="text-sm text-gray-700 mt-4 block">رمز التحقق (6 أرقام)</label>
+        <input id="otp" type="text" inputmode="numeric" maxlength="6"
+               class="w-full border rounded-lg px-3 py-2 mt-1 mono tracking-widest text-center text-lg"
+               placeholder="______" autocomplete="one-time-code" />
+
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button id="verifyBtn"
+                  class="bg-blue-700 hover:bg-blue-800 text-white py-2.5 rounded-lg">
+            تحقق ودخول
+          </button>
+          <button id="resendBtn"
+                  class="border py-2.5 rounded-lg hover:bg-gray-50">
+            إعادة إرسال
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between mt-3 text-xs text-gray-500">
+          <span>المتبقي: <span id="countdown" class="mono">--:--</span></span>
+          <button id="backBtn" class="text-blue-700 hover:underline">رجوع</button>
+        </div>
+
+        <p id="step2Err" class="text-sm text-red-600 mt-3"></p>
+      </div>
     </div>
   </div>
 
-  <!-- App -->
+  <!-- APP -->
   <main id="app" class="hidden max-w-6xl mx-auto p-6">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
@@ -36,17 +82,18 @@
         <p class="text-gray-600">تعديل / حذف التعليقات.</p>
       </div>
       <div class="flex gap-2">
-        <button id="refresh" class="border px-4 py-2 rounded-lg">تحديث</button>
-        <button id="logout" class="border px-4 py-2 rounded-lg">خروج</button>
+        <button id="refresh" class="border px-4 py-2 rounded-lg hover:bg-white">تحديث</button>
+        <button id="logout" class="border px-4 py-2 rounded-lg hover:bg-white">خروج</button>
       </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border p-4 mb-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-      <div class="flex gap-2 items-center">
-        <span id="status" class="text-sm text-gray-600"></span>
+      <div class="text-sm text-gray-600">
+        <span id="status"></span>
       </div>
-      <div class="flex gap-2">
-        <input id="search" class="border rounded-lg px-3 py-2 w-72 max-w-full" placeholder="بحث (اسم/عمل/رأي)" />
+      <div class="flex gap-2 flex-wrap">
+        <input id="search" class="border rounded-lg px-3 py-2 w-72 max-w-full"
+               placeholder="بحث (اسم/عمل/رأي)" />
         <select id="filter" class="border rounded-lg px-3 py-2">
           <option value="all">كل التقييمات</option>
           <option value="5">5 نجوم</option>
@@ -75,11 +122,13 @@
     </div>
 
     <div class="mt-4 flex justify-center">
-      <button id="loadMore" class="bg-white border border-blue-700 text-blue-700 px-6 py-2 rounded-lg">عرض المزيد</button>
+      <button id="loadMore" class="bg-white border border-blue-700 text-blue-700 px-6 py-2 rounded-lg hover:bg-blue-50">
+        عرض المزيد
+      </button>
     </div>
   </main>
 
-  <!-- Modal -->
+  <!-- MODAL -->
   <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
     <div class="bg-white rounded-xl w-full max-w-xl p-5">
       <div class="flex items-center justify-between mb-3">
@@ -118,15 +167,28 @@
   </div>
 
 <script>
-  // ✅ رابط الـ Worker
+  // ✅ عدّل هذا لو تغيّر رابط الـ Worker
   const API_BASE = "https://reviews-api.anasshopify88.workers.dev";
 
-  const login = document.getElementById("login");
-  const app = document.getElementById("app");
-  const pwEl = document.getElementById("pw");
-  const enterBtn = document.getElementById("enter");
-  const errEl = document.getElementById("err");
+  // ===== DOM =====
+  const authWrap = document.getElementById("authWrap");
+  const step1 = document.getElementById("step1");
+  const step2 = document.getElementById("step2");
 
+  const pwEl = document.getElementById("pw");
+  const otpEl = document.getElementById("otp");
+
+  const sendOtpBtn = document.getElementById("sendOtpBtn");
+  const verifyBtn  = document.getElementById("verifyBtn");
+  const resendBtn  = document.getElementById("resendBtn");
+  const backBtn    = document.getElementById("backBtn");
+
+  const step1Err = document.getElementById("step1Err");
+  const step2Err = document.getElementById("step2Err");
+  const countdownEl = document.getElementById("countdown");
+  const ttlMinEl = document.getElementById("ttlMin");
+
+  const app = document.getElementById("app");
   const rowsEl = document.getElementById("rows");
   const refreshBtn = document.getElementById("refresh");
   const logoutBtn = document.getElementById("logout");
@@ -145,12 +207,20 @@
   const mRating = document.getElementById("mRating");
   const mReview = document.getElementById("mReview");
 
+  // ===== State =====
+  let challengeId = "";
+  let otpExpiresAt = 0;
+  let countdownTimer = null;
+
   let offset = 0;
   const pageSize = 30;
   let cache = [];
   let editingId = null;
 
+  // ===== Helpers =====
   function setStatus(msg) { statusEl.textContent = msg || ""; }
+  function setErr1(msg) { step1Err.textContent = msg || ""; }
+  function setErr2(msg) { step2Err.textContent = msg || ""; }
 
   function getSessionToken() {
     return sessionStorage.getItem("admin_session") || "";
@@ -159,7 +229,7 @@
     sessionStorage.setItem("admin_session", t);
   }
 
-  function authHeaders() {
+  function authHeadersJson() {
     return {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${getSessionToken()}`
@@ -171,10 +241,10 @@
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
       const t = await res.text();
-      throw new Error("الـ API رجّع HTML بدل JSON. غالباً CORS أو رابط غلط.");
+      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE و CORS.");
     }
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || data?.detail || `HTTP ${res.status}`);
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.detail || data?.error || `HTTP ${res.status}`);
     return data;
   }
 
@@ -183,6 +253,43 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function showStep(n) {
+    if (n === 1) {
+      step1.classList.remove("hidden");
+      step2.classList.add("hidden");
+      otpEl.value = "";
+      setErr2("");
+      stopCountdown();
+    } else {
+      step1.classList.add("hidden");
+      step2.classList.remove("hidden");
+    }
+  }
+
+  function startCountdown() {
+    stopCountdown();
+    const tick = () => {
+      const ms = otpExpiresAt - Date.now();
+      if (ms <= 0) {
+        countdownEl.textContent = "00:00";
+        setErr2("انتهت صلاحية الرمز. اضغط إعادة إرسال.");
+        stopCountdown();
+        return;
+      }
+      const s = Math.floor(ms / 1000);
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      countdownEl.textContent = `${mm}:${ss}`;
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = null;
   }
 
   function rowHtml(it) {
@@ -194,14 +301,14 @@
 
     return `
       <tr class="border-t">
-        <td class="p-3 font-mono text-xs">${id}</td>
+        <td class="p-3 mono text-xs">${id}</td>
         <td class="p-3">${name}</td>
         <td class="p-3">${job}</td>
         <td class="p-3">${rating}</td>
         <td class="p-3 max-w-[520px]">${review}</td>
         <td class="p-3 whitespace-nowrap">
-          <button class="edit border px-3 py-1 rounded-lg" data-id="${id}">تعديل</button>
-          <button class="del border border-red-500 text-red-600 px-3 py-1 rounded-lg" data-id="${id}">حذف</button>
+          <button class="edit border px-3 py-1 rounded-lg hover:bg-gray-50" data-id="${id}">تعديل</button>
+          <button class="del border border-red-500 text-red-600 px-3 py-1 rounded-lg hover:bg-red-50" data-id="${id}">حذف</button>
         </td>
       </tr>
     `;
@@ -244,25 +351,7 @@
       loadMoreBtn.textContent = "لا يوجد المزيد";
       loadMoreBtn.disabled = true;
     }
-
     render();
-  }
-
-  async function loginAdmin() {
-    errEl.textContent = "";
-    const password = (pwEl.value || "").trim();
-    if (!password) return (errEl.textContent = "اكتب كلمة المرور.");
-
-    const data = await apiJson(`${API_BASE}/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-
-    setSessionToken(data.token);
-    login.classList.add("hidden");
-    app.classList.remove("hidden");
-    await load({ reset: true });
   }
 
   function openEdit(id) {
@@ -309,7 +398,7 @@
 
     await apiJson(`${API_BASE}/admin/reviews/${id}`, {
       method: "PATCH",
-      headers: authHeaders(),
+      headers: authHeadersJson(),
       body: JSON.stringify(body),
     });
 
@@ -320,17 +409,120 @@
     setStatus(`تم تحديث #${id}`);
   }
 
-  // Events
-  enterBtn.addEventListener("click", () => loginAdmin().catch(e => errEl.textContent = e.message));
-  pwEl.addEventListener("keydown", (e) => { if (e.key === "Enter") loginAdmin().catch(er => errEl.textContent = er.message); });
+  // ===== OTP Flow =====
+  async function requestOtp() {
+    setErr1("");
+    const password = (pwEl.value || "").trim();
+    if (!password) return setErr1("اكتب كلمة المرور.");
+
+    sendOtpBtn.disabled = true;
+    sendOtpBtn.classList.add("opacity-70");
+
+    try {
+      const data = await apiJson(`${API_BASE}/admin/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      challengeId = data.challengeId || "";
+      const ttl = Number(data.ttl || 600);
+      otpExpiresAt = Date.now() + (ttl * 1000);
+
+      ttlMinEl.textContent = String(Math.max(1, Math.round(ttl / 60)));
+      showStep(2);
+      startCountdown();
+      otpEl.focus();
+    } catch (e) {
+      setErr1(e.message || "تعذر إرسال الرمز");
+    } finally {
+      sendOtpBtn.disabled = false;
+      sendOtpBtn.classList.remove("opacity-70");
+    }
+  }
+
+  async function verifyOtp() {
+    setErr2("");
+    const otp = (otpEl.value || "").trim();
+    if (!challengeId) return setErr2("لا يوجد طلب رمز نشط. اضغط إعادة إرسال.");
+    if (!/^\d{6}$/.test(otp)) return setErr2("اكتب رمز صحيح من 6 أرقام.");
+
+    verifyBtn.disabled = true;
+    verifyBtn.classList.add("opacity-70");
+
+    try {
+      const data = await apiJson(`${API_BASE}/admin/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId, otp }),
+      });
+
+      const token = data.token || "";
+      if (!token) throw new Error("لم يتم استلام توكن الجلسة.");
+
+      setSessionToken(token);
+
+      // show app
+      authWrap.classList.add("hidden");
+      app.classList.remove("hidden");
+      await load({ reset: true });
+    } catch (e) {
+      setErr2(e.message || "فشل التحقق");
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.classList.remove("opacity-70");
+    }
+  }
+
+  async function resendOtp() {
+    // نفس requestOtp لكن ما نغيّر للخطوة 1
+    setErr2("");
+    const password = (pwEl.value || "").trim();
+    if (!password) return setErr2("اكتب كلمة المرور أولاً (ثم أعد الإرسال).");
+
+    resendBtn.disabled = true;
+    resendBtn.classList.add("opacity-70");
+
+    try {
+      const data = await apiJson(`${API_BASE}/admin/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      challengeId = data.challengeId || "";
+      const ttl = Number(data.ttl || 600);
+      otpExpiresAt = Date.now() + (ttl * 1000);
+
+      ttlMinEl.textContent = String(Math.max(1, Math.round(ttl / 60)));
+      startCountdown();
+      setErr2("تم إعادة إرسال الرمز.");
+      otpEl.focus();
+    } catch (e) {
+      setErr2(e.message || "تعذر إعادة إرسال الرمز");
+    } finally {
+      resendBtn.disabled = false;
+      resendBtn.classList.remove("opacity-70");
+    }
+  }
+
+  // ===== Events =====
+  sendOtpBtn.addEventListener("click", () => requestOtp());
+  pwEl.addEventListener("keydown", (e) => { if (e.key === "Enter") requestOtp(); });
+
+  verifyBtn.addEventListener("click", () => verifyOtp());
+  otpEl.addEventListener("keydown", (e) => { if (e.key === "Enter") verifyOtp(); });
+
+  resendBtn.addEventListener("click", () => resendOtp());
+  backBtn.addEventListener("click", () => showStep(1));
 
   logoutBtn.addEventListener("click", () => {
     sessionStorage.removeItem("admin_session");
     location.reload();
   });
 
-  refreshBtn.addEventListener("click", () => load({ reset: true }).catch(() => {}));
-  loadMoreBtn.addEventListener("click", () => load({ reset: false }).catch(() => {}));
+  refreshBtn.addEventListener("click", () => load({ reset: true }).catch(()=>{}));
+  loadMoreBtn.addEventListener("click", () => load({ reset: false }).catch(()=>{}));
   filterEl.addEventListener("change", render);
   searchEl.addEventListener("input", render);
 
@@ -349,10 +541,15 @@
   (async () => {
     const t = getSessionToken();
     if (t) {
-      login.classList.add("hidden");
+      authWrap.classList.add("hidden");
       app.classList.remove("hidden");
-      try { await load({ reset: true }); }
-      catch { sessionStorage.removeItem("admin_session"); }
+      try {
+        await load({ reset: true });
+      } catch {
+        sessionStorage.removeItem("admin_session");
+        authWrap.classList.remove("hidden");
+        app.classList.add("hidden");
+      }
     }
   })();
 </script>
