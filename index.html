@@ -29,9 +29,8 @@
 
   <link rel="stylesheet" href="style.css" />
 
-  <!-- ✅ Overrides: Header/Footer logo + replace buttons/links -->
+  <!-- ✅ Styles for injected logo/button -->
   <style>
-    /* شعار الهيدر */
     .anas-brand-logo{
       height: 40px;
       width: auto;
@@ -41,7 +40,6 @@
       .anas-brand-logo{ height: 44px; }
     }
 
-    /* زر المدونة بدل أضف رأيك */
     .anas-blog-btn{
       background: #2563eb;
       color: #fff;
@@ -56,7 +54,6 @@
     }
     .anas-blog-btn:hover{ filter: brightness(.95); }
 
-    /* الفوتر */
     .anas-footer-logo{
       height: 44px;
       width: auto;
@@ -97,21 +94,20 @@
         <div>
           <label for="name" class="block text-sm font-medium text-gray-700 mb-1">الاسم (مطلوب)</label>
           <input type="text" id="name" name="name" maxlength="30" required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
           <p class="text-xs text-gray-500 mt-1">الحد الأقصى 30 حرفًا، بدون روابط</p>
         </div>
 
         <div>
           <label for="job" class="block text-sm font-medium text-gray-700 mb-1">المسمى/العمل (مطلوب)</label>
           <input type="text" id="job" name="job" maxlength="40" required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary">
           <p class="text-xs text-gray-500 mt-1">الحد الأقصى 40 حرفًا، بدون روابط</p>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">التقييم بالنجوم (مطلوب)</label>
 
-          <!-- نجوم -->
           <div class="flex gap-1 justify-start" id="star-rating" dir="rtl">
             <i data-feather="star" class="star-icon w-8 h-8 text-gray-300 cursor-pointer" data-value="1"></i>
             <i data-feather="star" class="star-icon w-8 h-8 text-gray-300 cursor-pointer" data-value="2"></i>
@@ -127,7 +123,7 @@
         <div>
           <label for="review" class="block text-sm font-medium text-gray-700 mb-1">نص الرأي (مطلوب)</label>
           <textarea id="review" name="review" rows="4" maxlength="400" required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"></textarea>
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"></textarea>
           <p class="text-xs text-gray-500 mt-1">الحد الأقصى 400 حرفًا، ممنوع الروابط أو معلومات التواصل</p>
         </div>
 
@@ -149,7 +145,7 @@
         </div>
 
         <button type="submit" id="submitBtn"
-          class="w-full bg-primary hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
+                class="w-full bg-primary hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
           إرسال الرأي
         </button>
 
@@ -164,7 +160,7 @@
         <div class="flex items-center gap-3">
           <label for="filter" class="text-sm font-medium text-gray-600">تصفية حسب:</label>
           <select id="filter"
-            class="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
+                  class="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
             <option value="all">كل التقييمات</option>
             <option value="5">5 نجوم</option>
             <option value="4">4 نجوم</option>
@@ -181,7 +177,7 @@
 
       <div class="text-center mt-8">
         <button id="load-more"
-          class="bg-white border border-primary text-primary hover:bg-primary hover:text-white px-8 py-2.5 rounded-lg font-medium">
+                class="bg-white border border-primary text-primary hover:bg-primary hover:text-white px-8 py-2.5 rounded-lg font-medium">
           عرض المزيد
         </button>
       </div>
@@ -193,7 +189,7 @@
 
   <!-- Toast Notification -->
   <div id="toast"
-    class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hidden">
+       class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hidden">
     <div class="flex items-center gap-2">
       <i data-feather="check-circle"></i>
       <span>تم استلام رأيك، شكرًا لك!</span>
@@ -204,7 +200,7 @@
   <script src="components/header.js"></script>
   <script src="components/footer.js"></script>
 
-  <!-- ✅ Patch header/footer (منع تكرار الشعار + زر المدونة + حذف كل الآراء + شعار الفوتر) -->
+  <!-- ✅ Patch header/footer (منع تكرار الشعار + حذف النصوص القديمة + زر المدونة + شعار الفوتر) -->
   <script>
   (function () {
     var LOGO = "https://imgur.com/meUEoP7.png";
@@ -229,9 +225,30 @@
       return a;
     }
 
-    function removeExtra(root, selector) {
+    function removeExtras(root, selector) {
       var els = root.querySelectorAll(selector);
       for (var i = 1; i < els.length; i++) els[i].remove();
+    }
+
+    function cleanupOldHeaderTexts(root) {
+      // نحذف فقط العناصر "النصّية البحتة" اللي تطابق الكلمات القديمة
+      var kill = { "anas rashed": 1, "ar": 1, "آراء العملاء": 1 };
+      var nodes = root.querySelectorAll("a, button, span, div, p, h1, h2, h3, h4");
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (!el || !el.textContent) continue;
+
+        // لا تحذف لو العنصر يحتوي شعارنا
+        if (el.querySelector && el.querySelector("img.anas-brand-logo")) continue;
+
+        var txt = (el.textContent || "").replace(/\s+/g, " ").trim();
+        var low = txt.toLowerCase();
+
+        // نحذف فقط لو العنصر ما بداخله عناصر (عشان ما نحذف كونتينر كبير بالغلط)
+        if ((kill[low] || kill[txt]) && (!el.children || el.children.length === 0)) {
+          el.remove();
+        }
+      }
     }
 
     function findBrandContainer(root) {
@@ -243,126 +260,129 @@
 
       if (preferred) return preferred;
 
-      // fallback: أقرب عنصر للنصوص القديمة
-      var nodes = root.querySelectorAll("a, div, span, h1, h2, h3, p");
-      for (var i = 0; i < nodes.length; i++) {
-        var t = (nodes[i].textContent || "").trim();
-        if (t === "Anas Rashed" || t === "AR" || t === "آراء العملاء") {
-          return nodes[i].closest("a,div,span") || nodes[i];
+      // fallback: أول عنصر مناسب داخل header
+      return (
+        root.querySelector("header a") ||
+        root.querySelector("header .brand") ||
+        root.querySelector("header .logo") ||
+        root.querySelector("header div") ||
+        root.querySelector("header span") ||
+        root.querySelector("header") ||
+        root.querySelector("div") ||
+        null
+      );
+    }
+
+    function patchHeader() {
+      var host = document.querySelector("custom-header");
+      if (!host) return;
+
+      var root = host.shadowRoot || host;
+
+      // نظافة: احذف النصوص القديمة لو موجودة
+      cleanupOldHeaderTexts(root);
+
+      // نظافة: خل شعار واحد فقط
+      removeExtras(root, "img.anas-brand-logo");
+
+      // لو سبق باتشنا: اكتفِ بالنظافة
+      if (host.dataset && host.dataset.patched === "1") {
+        try { if (window.feather) feather.replace(); } catch(e) {}
+        return;
+      }
+
+      // 1) استبدال منطقة البراند بشعار واحد
+      var brand = findBrandContainer(root);
+      if (brand) {
+        brand.innerHTML = "";
+        brand.appendChild(makeLogo("anas-brand-logo"));
+        if (brand.tagName && brand.tagName.toLowerCase() === "a") {
+          brand.setAttribute("href", "/");
         }
       }
 
-      return root.querySelector("header") || root.querySelector("div") || null;
+      // 2) زر المدونة بدل "أضف رأيك/شارك رأيك"
+      // احذف أي زر مدونة مكرر
+      var oldBlog = root.querySelectorAll("a.anas-blog-btn");
+      for (var ob = 0; ob < oldBlog.length; ob++) oldBlog[ob].remove();
+
+      var btns = root.querySelectorAll("a, button");
+      var replaced = false;
+
+      for (var k = 0; k < btns.length; k++) {
+        var b = btns[k];
+        var bt = (b.textContent || "").trim();
+        if (bt.includes("أضف رأيك") || bt.includes("اضف رأيك") || bt.includes("شارك رأيك")) {
+          b.replaceWith(makeBlogBtn());
+          replaced = true;
+          break;
+        }
+      }
+
+      // إذا ما لقينا زر الإضافة: نضيف زر المدونة في nav إن وجد
+      if (!replaced) {
+        (root.querySelector("nav") || root).appendChild(makeBlogBtn());
+      }
+
+      // 3) إخفاء زر "كل الآراء" إن وجد
+      btns = root.querySelectorAll("a, button");
+      for (var m = 0; m < btns.length; m++) {
+        var x = btns[m];
+        var xt = (x.textContent || "").trim();
+        if (xt.includes("كل الآراء") || xt.includes("كل الاراء") || xt.includes("عرض كل الآراء")) {
+          x.style.display = "none";
+        }
+      }
+
+      if (host.dataset) host.dataset.patched = "1";
+      try { if (window.feather) feather.replace(); } catch(e) {}
     }
 
-function patchHeader() {
-  var host = document.querySelector("custom-header");
-  if (!host) return;
+    function patchFooter() {
+      var host = document.querySelector("custom-footer");
+      if (!host) return;
 
-  var root = host.shadowRoot || host;
+      var root = host.shadowRoot || host;
 
-  // ✅ احذف أي عناصر نصّها "Anas Rashed / AR / آراء العملاء" (حتى لو كانت بمكان ثاني)
-  (function cleanupOldTexts() {
-    var kill = { "anas rashed": 1, "ar": 1, "آراء العملاء": 1 };
-    var nodes = root.querySelectorAll("a, button, div, span, p, h1, h2, h3, h4");
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-
-      // لا نحذف لو العنصر يحتوي شعارنا
-      if (el.querySelector && el.querySelector("img.anas-brand-logo")) continue;
-
-      var t = (el.textContent || "").replace(/\s+/g, " ").trim();
-      var tLower = t.toLowerCase();
-
-      // حذف لو النص يساوي تمامًا
-      if (kill[tLower] || kill[t]) {
-        el.remove();
+      // استبدال رابط anasrashed.com بشعار
+      var links = root.querySelectorAll("a");
+      for (var i = 0; i < links.length; i++) {
+        var a = links[i];
+        var t = (a.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+        if (t === "anasrashed.com" || t.includes("anasrashed.com")) {
+          a.textContent = "";
+          a.appendChild(makeLogo("anas-footer-logo"));
+          break;
+        }
       }
+
+      // نظافة: خل شعار واحد فقط
+      removeExtras(root, "img.anas-footer-logo");
+
+      try { if (window.feather) feather.replace(); } catch(e) {}
+    }
+
+    function run() {
+      patchHeader();
+      patchFooter();
+
+      // إعادة محاولة لأن الـ components ممكن تتأخر أو تعيد رندر
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        patchHeader();
+        patchFooter();
+        if (tries >= 14) clearInterval(timer);
+      }, 250);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", run);
+    } else {
+      run();
     }
   })();
-
-  // لو انعمل باتش قبل: فقط نظف تكرار الشعار وانتهينا
-  if (host.dataset && host.dataset.patched === "1") {
-    var logos = root.querySelectorAll("img.anas-brand-logo");
-    for (var z = 1; z < logos.length; z++) logos[z].remove();
-    return;
-  }
-
-  // نظّف أي شعارات مكررة
-  var oldLogos = root.querySelectorAll("img.anas-brand-logo");
-  for (var r = 1; r < oldLogos.length; r++) oldLogos[r].remove();
-
-  // 1) استبدال منطقة البراند بشعار واحد
-  function makeLogo(className) {
-    var img = document.createElement("img");
-    img.src = "https://imgur.com/meUEoP7.png";
-    img.alt = "شعار أنس راشد";
-    img.loading = "lazy";
-    img.className = className;
-    return img;
-  }
-
-  function findBrandContainer() {
-    return (
-      root.querySelector("a[href='/']") ||
-      root.querySelector("a[href='./']") ||
-      root.querySelector("a[href='index.html']") ||
-      root.querySelector("header a") ||
-      root.querySelector("header div") ||
-      root.querySelector("header span") ||
-      root.querySelector("header") ||
-      root.querySelector("div")
-    );
-  }
-
-  var brand = findBrandContainer();
-  if (brand) {
-    brand.innerHTML = "";
-    brand.appendChild(makeLogo("anas-brand-logo"));
-    if (brand.tagName && brand.tagName.toLowerCase() === "a") brand.setAttribute("href", "/");
-  }
-
-  // 2) زر المدونة بدل "أضف رأيك/شارك رأيك"
-  function makeBlogBtn() {
-    var a = document.createElement("a");
-    a.href = "https://blog.anasrashed.com";
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.className = "anas-blog-btn";
-    a.innerHTML = "<i data-feather='book-open' class='w-4 h-4'></i><span>المدونة</span>";
-    return a;
-  }
-
-  // احذف أي زر مدونة مكرر
-  var oldBlog = root.querySelectorAll("a.anas-blog-btn");
-  for (var ob = 0; ob < oldBlog.length; ob++) oldBlog[ob].remove();
-
-  var btns = root.querySelectorAll("a, button");
-  var replaced = false;
-  for (var k = 0; k < btns.length; k++) {
-    var b = btns[k];
-    var bt = (b.textContent || "").trim();
-    if (bt.includes("أضف رأيك") || bt.includes("اضف رأيك") || bt.includes("شارك رأيك")) {
-      b.replaceWith(makeBlogBtn());
-      replaced = true;
-      break;
-    }
-  }
-  if (!replaced) (root.querySelector("nav") || root).appendChild(makeBlogBtn());
-
-  // 3) إخفاء زر "كل الآراء"
-  btns = root.querySelectorAll("a, button");
-  for (var m = 0; m < btns.length; m++) {
-    var x = btns[m];
-    var xt = (x.textContent || "").trim();
-    if (xt.includes("كل الآراء") || xt.includes("كل الاراء") || xt.includes("عرض كل الآراء")) {
-      x.style.display = "none";
-    }
-  }
-
-  if (host.dataset) host.dataset.patched = "1";
-  try { if (window.feather) feather.replace(); } catch(e) {}
-}
+  </script>
 
   <!-- Page logic -->
   <script>
