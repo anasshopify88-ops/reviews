@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لوحة إدارة الآراء</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+  <style> body{font-family:Cairo,system-ui} </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+  <!-- Gate -->
+  <div id="gate" class="min-h-screen flex items-center justify-center p-6">
+    <div class="bg-white border rounded-2xl shadow-sm p-6 w-full max-w-md">
+      <h1 class="text-2xl font-extrabold text-blue-700 mb-2">دخول لوحة الإدارة</h1>
+      <p class="text-gray-600 mb-4">محمية بكلمة مرور + توكن API</p>
+      <input id="pw" type="password" class="w-full border rounded-lg px-3 py-2 mb-3" placeholder="كلمة المرور" />
+      <button id="enter" class="w-full bg-blue-700 text-white py-2.5 rounded-lg">دخول</button>
+      <p id="gateErr" class="text-sm text-red-600 mt-3"></p>
+      <p class="text-xs text-gray-500 mt-4">تنبيه: لا تشارك رابط هذه الصفحة.</p>
+    </div>
+  </div>
+
+  <!-- App -->
+  <main id="app" class="hidden max-w-6xl mx-auto p-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl font-extrabold text-blue-700">لوحة إدارة الآراء</h1>
+        <p class="text-gray-600">تعديل / حذف التعليقات (يتطلب Admin Token محفوظ عندك).</p>
+      </div>
+      <div class="flex gap-2">
+        <input id="token" class="w-80 max-w-full border rounded-lg px-3 py-2" placeholder="ألصق ADMIN TOKEN هنا" />
+        <button id="saveToken" class="bg-blue-700 text-white px-4 py-2 rounded-lg">حفظ</button>
+        <button id="logout" class="border px-4 py-2 rounded-lg">خروج</button>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border p-4 mb-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+      <div class="flex gap-2 items-center">
+        <button id="refresh" class="border px-4 py-2 rounded-lg">تحديث</button>
+        <span id="status" class="text-sm text-gray-600"></span>
+      </div>
+      <div class="flex gap-2">
+        <input id="search" class="border rounded-lg px-3 py-2 w-72 max-w-full" placeholder="بحث نصي (اسم/عمل/رأي)" />
+        <select id="filter" class="border rounded-lg px-3 py-2">
+          <option value="all">كل التقييمات</option>
+          <option value="5">5 نجوم</option>
+          <option value="4">4 نجوم</option>
+          <option value="3">3 نجوم</option>
+          <option value="2">2 نجوم</option>
+          <option value="1">1 نجمة</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-auto bg-white rounded-xl shadow-sm border">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-3 text-right">ID</th>
+            <th class="p-3 text-right">الاسم</th>
+            <th class="p-3 text-right">العمل</th>
+            <th class="p-3 text-right">التقييم</th>
+            <th class="p-3 text-right">الرأي</th>
+            <th class="p-3 text-right">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-center">
+      <button id="loadMore" class="bg-white border border-blue-700 text-blue-700 px-6 py-2 rounded-lg">عرض المزيد</button>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-extrabold text-lg">تعديل تعليق</h2>
+        <button id="closeModal" class="text-gray-500">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-gray-600">الاسم</label>
+          <input id="mName" class="w-full border rounded-lg px-3 py-2" maxlength="30" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-600">العمل</label>
+          <input id="mJob" class="w-full border rounded-lg px-3 py-2" maxlength="40" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-600">التقييم</label>
+          <select id="mRating" class="w-full border rounded-lg px-3 py-2">
+            <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="text-xs text-gray-600">الرأي</label>
+          <textarea id="mReview" class="w-full border rounded-lg px-3 py-2" maxlength="400" rows="5"></textarea>
+          <p class="text-xs text-gray-500 mt-1">ممنوع روابط/إيميل/أرقام/معلومات تواصل/HTML.</p>
+          <p id="mErr" class="text-sm text-red-600 mt-2"></p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-4 justify-end">
+        <button id="saveEdit" class="bg-blue-700 text-white px-5 py-2 rounded-lg">حفظ</button>
+        <button id="cancelEdit" class="border px-5 py-2 rounded-lg">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // === CONFIG ===
+  const API_BASE = "https://reviews-api.anasshopify88.workers.dev";
+
+  // ضع هنا SHA-256 لكلمة مرورك (بدون ما تحط كلمة المرور نفسها)
+  // سأعطيك طريقة توليدها تحت.
+  const PASSWORD_HASH = "PUT_SHA256_HASH_HERE";
+
+  const gate = document.getElementById("gate");
+  const app = document.getElementById("app");
+  const gateErr = document.getElementById("gateErr");
+  const pwEl = document.getElementById("pw");
+  const enterBtn = document.getElementById("enter");
+
+  const tokenEl = document.getElementById("token");
+  const saveTokenBtn = document.getElementById("saveToken");
+  const logoutBtn = document.getElementById("logout");
+
+  const rowsEl = document.getElementById("rows");
+  const refreshBtn = document.getElementById("refresh");
+  const loadMoreBtn = document.getElementById("loadMore");
+  const statusEl = document.getElementById("status");
+  const filterEl = document.getElementById("filter");
+  const searchEl = document.getElementById("search");
+
+  const modal = document.getElementById("modal");
+  const closeModal = document.getElementById("closeModal");
+  const cancelEdit = document.getElementById("cancelEdit");
+  const saveEdit = document.getElementById("saveEdit");
+  const mErr = document.getElementById("mErr");
+  const mName = document.getElementById("mName");
+  const mJob = document.getElementById("mJob");
+  const mRating = document.getElementById("mRating");
+  const mReview = document.getElementById("mReview");
+
+  let offset = 0;
+  const pageSize = 30;
+  let cache = []; // loaded items
+  let editingId = null;
+
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  async function sha256(text) {
+    const enc = new TextEncoder().encode(text);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  function setStatus(msg) { statusEl.textContent = msg || ""; }
+
+  function getToken() {
+    return sessionStorage.getItem("admin_token") || "";
+  }
+  function setToken(t) {
+    sessionStorage.setItem("admin_token", t);
+  }
+
+  function showApp() {
+    gate.classList.add("hidden");
+    app.classList.remove("hidden");
+    tokenEl.value = getToken();
+  }
+
+  function showGate() {
+    app.classList.add("hidden");
+    gate.classList.remove("hidden");
+  }
+
+  async function tryEnter() {
+    gateErr.textContent = "";
+    const pw = (pwEl.value || "").trim();
+    if (!pw) return (gateErr.textContent = "اكتب كلمة المرور.");
+
+    const h = await sha256(pw);
+    if (h !== PASSWORD_HASH) {
+      gateErr.textContent = "كلمة المرور غير صحيحة.";
+      return;
+    }
+
+    sessionStorage.setItem("admin_gate_ok", "1");
+    showApp();
+    await load({ reset: true });
+  }
+
+  function authHeaders() {
+    const t = getToken();
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${t}`,
+    };
+  }
+
+  async function apiJson(url, opts = {}) {
+    const res = await fetch(url, opts);
+    const ct = res.headers.get("content-type") || "";
+    const text = ct.includes("application/json") ? null : await res.text();
+    const data = ct.includes("application/json") ? await res.json() : { error: "Non-JSON", html: text?.slice(0, 200) };
+
+    if (!res.ok) throw new Error(data?.error || data?.detail || `HTTP ${res.status}`);
+    return data;
+  }
+
+  function rowHtml(it) {
+    const id = it.id;
+    const name = escapeHtml(it.name);
+    const job = escapeHtml(it.job);
+    const rating = Number(it.rating) || 0;
+    const review = escapeHtml(it.review);
+
+    return `
+      <tr class="border-t">
+        <td class="p-3 font-mono text-xs">${id}</td>
+        <td class="p-3">${name}</td>
+        <td class="p-3">${job}</td>
+        <td class="p-3">${rating}</td>
+        <td class="p-3 max-w-[520px]">${review}</td>
+        <td class="p-3 whitespace-nowrap">
+          <button class="edit border px-3 py-1 rounded-lg" data-id="${id}">تعديل</button>
+          <button class="del border border-red-500 text-red-600 px-3 py-1 rounded-lg" data-id="${id}">حذف</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function render() {
+    const q = (searchEl.value || "").trim().toLowerCase();
+    const rFilter = filterEl.value;
+
+    const list = cache.filter(it => {
+      if (rFilter !== "all" && String(it.rating) !== rFilter) return false;
+      if (!q) return true;
+      const s = `${it.name} ${it.job} ${it.review}`.toLowerCase();
+      return s.includes(q);
+    });
+
+    rowsEl.innerHTML = list.map(rowHtml).join("");
+  }
+
+  async function load({ reset = false } = {}) {
+    const t = getToken();
+    if (!t) {
+      alert("ألصق ADMIN_TOKEN أولاً ثم اضغط حفظ.");
+      return;
+    }
+
+    if (reset) {
+      offset = 0;
+      cache = [];
+      setStatus("جاري التحميل...");
+    }
+
+    const data = await apiJson(`${API_BASE}/admin/reviews?limit=${pageSize}&offset=${offset}`, {
+      method: "GET",
+      headers: { "Authorization": `Bearer ${t}` }
+    });
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    cache = cache.concat(items);
+    offset = data.nextOffset ?? (offset + items.length);
+
+    setStatus(`تم تحميل ${cache.length} تعليق`);
+    if (items.length < pageSize) {
+      loadMoreBtn.textContent = "لا يوجد المزيد";
+      loadMoreBtn.disabled = true;
+    } else {
+      loadMoreBtn.textContent = "عرض المزيد";
+      loadMoreBtn.disabled = false;
+    }
+
+    render();
+  }
+
+  function openEdit(id) {
+    const it = cache.find(x => x.id === id);
+    if (!it) return;
+    editingId = id;
+    mErr.textContent = "";
+    mName.value = it.name || "";
+    mJob.value = it.job || "";
+    mRating.value = String(it.rating || 5);
+    mReview.value = it.review || "";
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+
+  function closeEdit() {
+    editingId = null;
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+
+  async function doDelete(id) {
+    if (!confirm(`حذف التعليق #${id} ؟`)) return;
+    const t = getToken();
+    await apiJson(`${API_BASE}/admin/reviews/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${t}` }
+    });
+    cache = cache.filter(x => x.id !== id);
+    render();
+    setStatus(`تم حذف #${id}`);
+  }
+
+  async function doSaveEdit() {
+    mErr.textContent = "";
+    const id = editingId;
+    if (!id) return;
+
+    const body = {
+      name: mName.value.trim(),
+      job: mJob.value.trim(),
+      rating: Number(mRating.value),
+      review: mReview.value.trim()
+    };
+
+    const t = getToken();
+    await apiJson(`${API_BASE}/admin/reviews/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    const idx = cache.findIndex(x => x.id === id);
+    if (idx >= 0) cache[idx] = { ...cache[idx], ...body };
+    render();
+    closeEdit();
+    setStatus(`تم تحديث #${id}`);
+  }
+
+  // Events
+  enterBtn.addEventListener("click", tryEnter);
+  pwEl.addEventListener("keydown", (e) => { if (e.key === "Enter") tryEnter(); });
+
+  saveTokenBtn.addEventListener("click", () => {
+    const t = (tokenEl.value || "").trim();
+    if (!t) return alert("ألصق التوكن.");
+    setToken(t);
+    alert("تم حفظ التوكن لهذه الجلسة.");
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    sessionStorage.removeItem("admin_gate_ok");
+    sessionStorage.removeItem("admin_token");
+    location.reload();
+  });
+
+  refreshBtn.addEventListener("click", () => load({ reset: true }));
+  loadMoreBtn.addEventListener("click", () => load({ reset: false }));
+  filterEl.addEventListener("change", render);
+  searchEl.addEventListener("input", render);
+
+  rowsEl.addEventListener("click", (e) => {
+    const btnEdit = e.target.closest(".edit");
+    const btnDel = e.target.closest(".del");
+    if (btnEdit) openEdit(Number(btnEdit.dataset.id));
+    if (btnDel) doDelete(Number(btnDel.dataset.id));
+  });
+
+  closeModal.addEventListener("click", closeEdit);
+  cancelEdit.addEventListener("click", closeEdit);
+  saveEdit.addEventListener("click", doSaveEdit);
+
+  // Boot
+  (async () => {
+    if (sessionStorage.getItem("admin_gate_ok") === "1") {
+      showApp();
+      try { await load({ reset: true }); } catch {}
+    }
+  })();
+</script>
+</body>
+</html>
