@@ -45,7 +45,7 @@ function containsForbidden(text) {
 }
 
 function tooSpammyText(text) {
-  // فلتر بسيط لسبام متكرر جدًا (اختياري)
+  // للترشيح بسيط لسبام متكرر جدًا (اختياري)
   const repeatedChars = /(.)\1{8,}/;
   const repeatedWords = /\b(\w+)\b(?:\s+\1\b){4,}/i;
   return repeatedChars.test(text) || repeatedWords.test(text);
@@ -61,11 +61,13 @@ function clearError() {
   formError.classList.add("hidden");
 }
 
-function showToast(msg = "تم استلام رأيك، شكرًا لك!") {
+// --- تعديل هنا: رسالة التوست بعد الإرسال ---
+function showToast(msg = "تم إرسال رأيك للمراجعة، سيتم نشره قريباً!") {
   toast.querySelector("span").textContent = msg;
   toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("hidden"), 2500);
+  setTimeout(() => toast.classList.add("hidden"), 4000); // زيادة وقت العرض
 }
+// ----------------------------------------
 
 function setStarUI(rating) {
   const stars = Array.from(starWrap.querySelectorAll("[data-value]"));
@@ -96,7 +98,7 @@ function renderStars(rating) {
   const r = Number(rating) || 0;
   let out = "";
   for (let i = 1; i <= 5; i++)
-    out += `<span class="${i <= r ? "text-yellow-400" : "text-gray-300"}">★</span>`;
+    out += `<span class="${i <= r ? "text-yellow-400" : "text-gray-300"}">★ </span>`;
   return `<div class="text-lg leading-none" aria-label="${r} من 5">${out}</div>`;
 }
 
@@ -140,11 +142,11 @@ async function fetchReviews({ reset = false } = {}) {
 
     const res = await fetch(`${API_BASE}/reviews?${params.toString()}`, { method: "GET" });
 
-    // ✅ فحص نوع الاستجابة قبل محاولة parse JSON
+    //  فحص نوع الإستجابة قبل محاولة parse JSON
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
       const t = await res.text();
-      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
+      throw new Error("الـ API يرجع HTML بدلاً JSON. تأكد من API_BASE/CORS.");
     }
 
     const data = await res.json();
@@ -171,7 +173,7 @@ async function fetchReviews({ reset = false } = {}) {
   }
 }
 
-// ====== ستار ريتنج ======
+// ====== ستار ريتنق ======
 starWrap.addEventListener("click", (e) => {
   const el = e.target.closest("[data-value]");
   if (!el) return;
@@ -194,12 +196,12 @@ starWrap.addEventListener("mouseleave", () => {
   setStarUI(v);
 });
 
-// ====== Submit ======
+// ====== إرسال ======
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearError();
 
-  // Honeypot (إذا تعبي = بوت)
+  // Honeypot (إذا تعبى = بوت)
   if (honeypotEl && (honeypotEl.value || "").trim().length > 0) {
     showError("تعذر إرسال الرأي.");
     return;
@@ -219,7 +221,7 @@ form.addEventListener("submit", async (e) => {
   const tsToken = (tsTokenEl.value || "").trim();
 
   if (!name || !job || !review || !rating) {
-    showError("فضلاً عبّئ جميع الحقول واختر التقييم بالنجوم.");
+    showError("فضلاً عبئ جميع الحقول واختر التقييم بالنجوم.");
     return;
   }
   if (name.length > 30 || job.length > 40 || review.length > 400) {
@@ -233,7 +235,7 @@ form.addEventListener("submit", async (e) => {
     return;
   }
   if (tooSpammyText(allText)) {
-    showError("النص يبدو غير طبيعي. فضلاً اكتب رأيًا واضحًا ومختصرًا.");
+    showError("النص يبدو غير طبيعي. فضلاً اكتب رأياً واضحاً ومختصراً.");
     return;
   }
 
@@ -253,11 +255,11 @@ form.addEventListener("submit", async (e) => {
       body: JSON.stringify({ name, job, rating, review, tsToken }),
     });
 
-    // ✅ فحص نوع الاستجابة قبل محاولة parse JSON
+    //  فحص نوع الإستجابة قبل محاولة parse JSON
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
       const t = await res.text();
-      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE/CORS.");
+      throw new Error("الـ API يرجع HTML بدلاً JSON. تأكد من API_BASE/CORS.");
     }
 
     const data = await res.json();
@@ -275,7 +277,9 @@ form.addEventListener("submit", async (e) => {
     }
     if (tsTokenEl) tsTokenEl.value = "";
 
-    await fetchReviews({ reset: true });
+    // --- تعديل هنا: لا نحدث القائمة مباشرة لأن الرأي لن يظهر إلا بعد الموافقة ---
+    // await fetchReviews({ reset: true });
+    // -------------------------------------------------------------------
   } catch (err) {
     showError(err.message || "حصل خطأ");
   } finally {
@@ -284,7 +288,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-// ====== Filter + Load more ======
+// ====== فلتر + تحميل المزيد ======
 filterEl.addEventListener("change", async () => {
   currentRatingFilter = filterEl.value || "all";
   await fetchReviews({ reset: true });
