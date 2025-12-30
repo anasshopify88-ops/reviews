@@ -79,7 +79,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
         <h1 class="text-3xl font-extrabold text-blue-700">لوحة إدارة الآراء</h1>
-        <p class="text-gray-600">تعديل / حذف التعليقات.</p>
+        <p class="text-gray-600">تعديل / حذف الآراء.</p>
       </div>
       <div class="flex gap-2">
         <button id="refresh" class="border px-4 py-2 rounded-lg hover:bg-white">تحديث</button>
@@ -133,7 +133,7 @@
     <div class="bg-white rounded-xl w-full max-w-xl p-5">
       <div class="flex items-center justify-between mb-3">
         <h2 class="font-extrabold text-lg">تعديل تعليق</h2>
-        <button id="closeModal" class="text-gray-500">✕</button>
+        <button id="closeModal" class="text-gray-500">✕ </button>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -167,7 +167,7 @@
   </div>
 
 <script>
-  // ✅ عدّل هذا لو تغيّر رابط الـ Worker
+  //  عدّل هذا لو لم تغيّر رابط الـ Worker
   const API_BASE = "https://reviews-api.anasshopify88.workers.dev";
 
   // ===== DOM =====
@@ -241,7 +241,7 @@
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) {
       const t = await res.text();
-      throw new Error("الـ API رجّع HTML بدل JSON. تأكد من API_BASE و CORS.");
+      throw new Error("الـ API يرجع HTML بدلاً JSON. تأكد من API_BASE و CORS.");
     }
     const data = await res.json().catch(() => null);
     if (!res.ok) throw new Error(data?.detail || data?.error || `HTTP ${res.status}`);
@@ -292,27 +292,42 @@
     countdownTimer = null;
   }
 
+  // --- تعديل هنا: دالة rowHtml ---
   function rowHtml(it) {
     const id = it.id;
     const name = escapeHtml(it.name);
     const job = escapeHtml(it.job);
     const rating = Number(it.rating) || 0;
     const review = escapeHtml(it.review);
+    const isApproved = it.is_approved === 1;
+
+    // تلوين الصفوف غير الموافق عليها
+    const bgClass = isApproved ? "" : "bg-yellow-50";
+    
+    // زر الموافقة يظهر فقط إذا لم يكن منشوراً
+    const approveBtn = !isApproved 
+      ? `<button class="approve border border-green-600 text-green-700 px-3 py-1 rounded-lg hover:bg-green-50 ml-2" data-id="${id}">✅ نشر</button>` 
+      : `<span class="text-green-600 text-xs font-bold mr-2">منشور</span>`;
 
     return `
-      <tr class="border-t">
+      <tr class="border-t ${bgClass}">
         <td class="p-3 mono text-xs">${id}</td>
-        <td class="p-3">${name}</td>
+        <td class="p-3">
+            ${name}
+            ${!isApproved ? '<span class="block text-xs text-red-500 font-bold">قيد الانتظار</span>' : ''}
+        </td>
         <td class="p-3">${job}</td>
         <td class="p-3">${rating}</td>
         <td class="p-3 max-w-[520px]">${review}</td>
         <td class="p-3 whitespace-nowrap">
+          ${approveBtn}
           <button class="edit border px-3 py-1 rounded-lg hover:bg-gray-50" data-id="${id}">تعديل</button>
           <button class="del border border-red-500 text-red-600 px-3 py-1 rounded-lg hover:bg-red-50" data-id="${id}">حذف</button>
         </td>
       </tr>
     `;
   }
+  // ------------------------------
 
   function render() {
     const q = (searchEl.value || "").trim().toLowerCase();
@@ -383,6 +398,27 @@
     render();
     setStatus(`تم حذف #${id}`);
   }
+
+  // --- إضافة هنا: دالة الموافقة على الرأي ---
+  async function doApprove(id) {
+    setStatus(`جاري نشر الرأي #${id}...`);
+    try {
+      await apiJson(`${API_BASE}/admin/reviews/${id}`, {
+        method: "PATCH",
+        headers: authHeadersJson(),
+        body: JSON.stringify({ is_approved: 1 }), // إرسال رقم 1 للموافقة
+      });
+      
+      // تحديث الكاش محلياً وعرضه
+      const idx = cache.findIndex(x => x.id === id);
+      if (idx >= 0) cache[idx].is_approved = 1;
+      render();
+      setStatus(`تم نشر الرأي #${id}`);
+    } catch (e) {
+      setStatus(`فشل نشر الرأي #${id}: ${e.message}`);
+    }
+  }
+  // ----------------------------------------
 
   async function doSaveEdit() {
     mErr.textContent = "";
@@ -526,12 +562,16 @@
   filterEl.addEventListener("change", render);
   searchEl.addEventListener("input", render);
 
+  // --- تعديل هنا: Event Listener لزر النشر والتعديل والحذف ---
   rowsEl.addEventListener("click", (e) => {
+    const btnApprove = e.target.closest(".approve");
     const btnEdit = e.target.closest(".edit");
     const btnDel = e.target.closest(".del");
+    if (btnApprove) doApprove(Number(btnApprove.dataset.id));
     if (btnEdit) openEdit(Number(btnEdit.dataset.id));
     if (btnDel) doDelete(Number(btnDel.dataset.id));
   });
+  // ----------------------------------------------------
 
   closeModal.addEventListener("click", closeEdit);
   cancelEdit.addEventListener("click", closeEdit);
